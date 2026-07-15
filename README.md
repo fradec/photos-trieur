@@ -4,7 +4,7 @@ Petit utilitaire macOS pour trier un gros stock de photos sans interface lourde.
 
 Le projet repose sur deux fichiers utiles:
 - `photo_sorter.py`: moteur de tri
-- `launch_sorter.command`: lanceur macOS avec selection visuelle des dossiers
+- `launch_sorter.applescript`: source du lanceur macOS sans Terminal
 
 ## Ce que fait l'outil
 
@@ -23,13 +23,6 @@ Le projet repose sur deux fichiers utiles:
 - repli sur le nom du fichier quand il contient une date exploitable
 - en cas de conflit ou de doute, le fichier est laisse en place
 
-## Pourquoi c'est simple
-
-- pas de framework web
-- pas de base de donnees
-- pas de dependance Python externe
-- seulement `python3`, `osascript` et `exiftool`
-
 ## Prerequis
 
 Verifier `exiftool`:
@@ -40,13 +33,17 @@ brew install exiftool
 
 ## Utilisation
 
-Double-cliquer sur `launch_sorter.command` dans le Finder ou lancer:
+Compiler puis lancer l'application macOS sans Terminal:
 
 ```bash
 cd /Users/nono/code/nono/photos-trieur
-chmod +x launch_sorter.command
-./launch_sorter.command
+./build_app.sh
+open launch_sorter.app
 ```
+
+Dans le lanceur, vous choisissez explicitement le mode:
+- `Previsualiser` (dry-run)
+- `Executer` (deplacement reel)
 
 Le journal est ecrit par defaut dans:
 
@@ -63,6 +60,10 @@ python3 photo_sorter.py "/Volumes/MON_DISQUE/Photos" "/Volumes/MON_DISQUE" --log
 ```
 
 Ajouter `--apply` pour deplacer reellement les fichiers.
+
+## Licence
+
+Ce projet est distribue sous The Unlicense (domaine public).
 
 ## Reprise
 
