@@ -29,7 +29,7 @@ EXIF_TAGS = [
     "TrackCreateDate",
 ]
 
-SORTED_FOLDER_NAME = "photos triees"
+SORTED_FOLDER_NAME = "sorted"
 LOG_DIRECTORY = Path.home() / "Library" / "Logs" / "photos-trieur"
 
 
@@ -135,7 +135,8 @@ def iter_media_files(source_root: Path, output_root: Path, include_videos: bool)
 
         dirnames[:] = [
             name for name in dirnames
-            if not name.startswith(".") and (current_dir / name) != output_root
+            if not name.startswith(".")
+            and (current_dir / name) != output_root
         ]
 
         for filename in filenames:
@@ -295,7 +296,7 @@ def parse_args() -> argparse.Namespace:
         description="Sort photos into YYYY-MM folders when the date is unambiguous."
     )
     parser.add_argument("source", help="Source folder to scan recursively")
-    parser.add_argument("destination", help="Parent folder that will receive the 'photos triees' folder")
+    parser.add_argument("destination", help="Parent folder that will receive the 'sorted' folder")
     parser.add_argument("--apply", action="store_true", help="Move files instead of running a dry-run")
     parser.add_argument("--include-videos", action="store_true", help="Include MOV/MP4/M4V/AVI files")
     parser.add_argument("--batch-size", type=int, default=200, help="Number of files sent to exiftool per batch")

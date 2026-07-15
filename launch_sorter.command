@@ -45,7 +45,7 @@ print "=================="
 print
 
 SOURCE_DIR=$(choose_folder "Choisir le dossier source a analyser")
-DESTINATION_PARENT=$(choose_folder "Choisir le dossier qui recevra le dossier 'photos triees'")
+DESTINATION_PARENT=$(choose_folder "Choisir le dossier qui recevra le dossier 'sorted'")
 MODE=$(choose_button "Choisir le mode d'execution" "Previsualiser" "Previsualiser" "Deplacer")
 MEDIA_SCOPE=$(choose_button "Faut-il inclure aussi les videos ?" "Photos seules" "Photos seules" "Photos et videos")
 
@@ -58,7 +58,7 @@ if [[ "$MEDIA_SCOPE" == "Photos et videos" ]]; then
 fi
 
 print "Source        : $SOURCE_DIR"
-print "Destination   : $DESTINATION_PARENT/photos triees"
+print "Destination   : $DESTINATION_PARENT/sorted"
 print "Mode          : $MODE"
 print "Journal       : $LOG_FILE"
 print

@@ -11,7 +11,7 @@ Le projet repose sur deux fichiers utiles:
 - choix visuel du dossier source
 - choix visuel du dossier destination
 - scan recursif automatique des sous-dossiers
-- creation d'un dossier `photos triees`
+- creation ou reutilisation d'un dossier `sorted`
 - creation de sous-dossiers `YYYY-MM`
 - deplacement uniquement si la date est sans ambiguite
 - conservation sur place des fichiers douteux
@@ -68,7 +68,7 @@ Ajouter `--apply` pour deplacer reellement les fichiers.
 
 Le traitement est naturellement relancable:
 - les fichiers deja deplaces ne sont plus dans la source
-- le dossier `photos triees` est ignore pendant les scans suivants
+- le dossier `sorted` est ignore pendant les scans suivants
 - le journal CSV garde une trace de chaque decision
 
 ## Conseil pratique
