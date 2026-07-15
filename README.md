@@ -15,7 +15,7 @@ Le projet repose sur deux fichiers utiles:
 - creation ou reutilisation du dossier cible
 - creation de sous-dossiers `YYYY/YYYY-MM`
 - deplacement uniquement si la date est sans ambiguite
-- renommage uniforme des fichiers deplaces en `YYYY-MM-DD_HH-MM-SS.ext`
+- renommage uniforme des fichiers deplaces en `YYYY-MM-DD_HH-MM-SS[-fff]__hash8.ext`
 - conservation sur place des fichiers douteux
 - journal CSV local pour savoir ce qui a ete fait et relancer sans risque
 

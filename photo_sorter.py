@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import re
@@ -34,6 +35,7 @@ EXIF_TAGS = [
 SORTED_FOLDER_NAME = "sorted"
 LOG_DIRECTORY = Path.home() / "Library" / "Logs" / "photos-trieur"
 TARGET_FILENAME_FORMAT = "%Y-%m-%d_%H-%M-%S"
+TARGET_FILENAME_HASH_LEN = 8
 
 
 def resolve_exiftool() -> str:
@@ -96,7 +98,7 @@ def parse_date_to_datetime(value: str | None) -> datetime | None:
         return None
 
     match = re.search(
-        r"((?:19|20)\d{2})[:\-]([01]\d)[:\-]([0-3]\d)(?:[ T]([0-2]\d):([0-5]\d):([0-5]\d))?",
+        r"((?:19|20)\d{2})[:\-]([01]\d)[:\-]([0-3]\d)(?:[ T]([0-2]\d):([0-5]\d):([0-5]\d)(?:\.(\d{1,6}))?)?",
         value,
     )
     if not match:
@@ -108,9 +110,11 @@ def parse_date_to_datetime(value: str | None) -> datetime | None:
     hour = int(match.group(4) or 0)
     minute = int(match.group(5) or 0)
     second = int(match.group(6) or 0)
+    fraction = match.group(7)
+    microsecond = int((fraction or "").ljust(6, "0")) if fraction else 0
 
     try:
-        candidate = datetime(year, month, day, hour, minute, second)
+        candidate = datetime(year, month, day, hour, minute, second, microsecond)
     except ValueError:
         return None
 
@@ -176,6 +180,11 @@ def filename_datetimes(path: Path) -> set[datetime]:
                 continue
 
     return values
+
+
+def stable_name_hash(source_path: Path) -> str:
+    digest = hashlib.sha1(str(source_path).encode("utf-8")).hexdigest()
+    return digest[:TARGET_FILENAME_HASH_LEN]
 
 
 def choose_month(path: Path, metadata: dict[str, str]) -> Decision:
@@ -304,7 +313,14 @@ def build_target_name(source_path: Path, captured_at: datetime | None, fallback_
         effective_datetime = captured_at
     else:
         effective_datetime = datetime.strptime(f"{fallback_month}-01 00:00:00", "%Y-%m-%d %H:%M:%S")
-    return f"{effective_datetime.strftime(TARGET_FILENAME_FORMAT)}{source_path.suffix.lower()}"
+
+    base = effective_datetime.strftime(TARGET_FILENAME_FORMAT)
+    if effective_datetime.microsecond > 0:
+        milliseconds = effective_datetime.microsecond // 1000
+        base = f"{base}-{milliseconds:03d}"
+
+    hash_suffix = stable_name_hash(source_path)
+    return f"{base}__{hash_suffix}{source_path.suffix.lower()}"
 
 
 def default_log_path() -> Path:
@@ -382,7 +398,7 @@ def process(source_root: Path, destination_parent: Path, apply_changes: bool, in
         "source_root": str(source_root),
         "output_root": str(output_root),
         "output_folder_name": output_folder_name,
-        "name_pattern": TARGET_FILENAME_FORMAT,
+        "name_pattern": "YYYY-MM-DD_HH-MM-SS[-fff]__hash8.ext",
         "log_path": str(log_path),
         "files_found": len(files),
         "movable": moved_count,
