@@ -23,19 +23,17 @@ end readSummaryMessage
 
 on run
 	set appPath to POSIX path of (path to me)
-	set bundlePath to do shell script "/usr/bin/python3 -c " & quoted form of "import os,sys;p=os.path.realpath(sys.argv[1]);i=p.find('.app/');print((p[:i+4] if i!=-1 else p).rstrip('/'))" & " " & quoted form of appPath
-	set bundleParent to do shell script "/usr/bin/dirname " & quoted form of bundlePath
-	set adjacentSorterPath to bundleParent & "/photo_sorter.py"
-	set bundledSorterPath to bundlePath & "/Contents/Resources/photo_sorter.py"
-	set sorterPath to adjacentSorterPath
+	set appDir to do shell script "/usr/bin/dirname " & quoted form of appPath
+	set adjacentSorterPath to appDir & "/photo_sorter.py"
+	set sorterPath to ""
 	set pythonBin to "/usr/bin/python3"
 	
 	try
-		do shell script "/usr/bin/test -f " & quoted form of adjacentSorterPath
+		set sorterPath to POSIX path of (path to resource "photo_sorter.py")
 	on error
 		try
-			do shell script "/usr/bin/test -f " & quoted form of bundledSorterPath
-			set sorterPath to bundledSorterPath
+			do shell script "/usr/bin/test -f " & quoted form of adjacentSorterPath
+			set sorterPath to adjacentSorterPath
 		on error
 			display dialog "Impossible de trouver photo_sorter.py a cote du lanceur." with title "Photos Trieur" buttons {"OK"} default button "OK"
 			return
