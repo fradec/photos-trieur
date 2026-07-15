@@ -75,8 +75,9 @@ on run
 		set failureMessage to "Traitement echoue (" & modeChoice & ")." & return & return & "Journal :" & return & logFile
 		set successDialogExpr to "button returned of (display dialog " & quoted form of successMessage & " with title \"Photos Trieur\" buttons {\"OK\", \"Afficher le journal\"} default button \"OK\")"
 		set failureDialogExpr to "button returned of (display dialog " & quoted form of failureMessage & " with title \"Photos Trieur\" buttons {\"OK\", \"Afficher le journal\"} default button \"OK\")"
-		set successFlow to "choice=$(/usr/bin/osascript -e " & quoted form of successDialogExpr & "); if [ \"$choice\" = \"Afficher le journal\" ]; then /usr/bin/open -R " & quoted form of logFile & "; fi"
-		set failureFlow to "choice=$(/usr/bin/osascript -e " & quoted form of failureDialogExpr & "); if [ \"$choice\" = \"Afficher le journal\" ]; then /usr/bin/open -R " & quoted form of logFile & "; fi"
+		set uiPrefix to "uid=$(/usr/bin/id -u); /bin/launchctl asuser \"$uid\" "
+		set successFlow to "choice=$(" & uiPrefix & "/usr/bin/osascript -e " & quoted form of successDialogExpr & "); if [ \"$choice\" = \"Afficher le journal\" ]; then " & uiPrefix & "/usr/bin/open -R " & quoted form of logFile & "; fi"
+		set failureFlow to "choice=$(" & uiPrefix & "/usr/bin/osascript -e " & quoted form of failureDialogExpr & "); if [ \"$choice\" = \"Afficher le journal\" ]; then " & uiPrefix & "/usr/bin/open -R " & quoted form of logFile & "; fi"
 		set workerCmd to cmd & " > " & quoted form of outputLogFile & " 2>&1; exit_code=$?; if [ $exit_code -eq 0 ]; then " & successFlow & "; else " & failureFlow & "; fi"
 		set launchCmd to "/bin/zsh -lc " & quoted form of ("(" & workerCmd & ") </dev/null >/dev/null 2>&1 & echo $!")
 		set jobPid to do shell script launchCmd
