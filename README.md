@@ -9,8 +9,7 @@ Le projet repose sur deux fichiers utiles:
 ## Ce que fait l'outil
 
 - choix visuel du dossier source
-- choix visuel du dossier destination
-- choix du nom du dossier cible (par defaut `sorted`)
+- choix visuel du dossier cible final (existant ou nouveau)
 - scan recursif automatique des sous-dossiers
 - creation ou reutilisation du dossier cible
 - creation de sous-dossiers `YYYY/YYYY-MM`
