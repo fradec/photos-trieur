@@ -10,10 +10,12 @@ Le projet repose sur deux fichiers utiles:
 
 - choix visuel du dossier source
 - choix visuel du dossier destination
+- choix du nom du dossier cible (par defaut `sorted`)
 - scan recursif automatique des sous-dossiers
-- creation ou reutilisation d'un dossier `sorted`
-- creation de sous-dossiers `YYYY-MM`
+- creation ou reutilisation du dossier cible
+- creation de sous-dossiers `YYYY/YYYY-MM`
 - deplacement uniquement si la date est sans ambiguite
+- renommage uniforme des fichiers deplaces en `YYYY-MM-DD_HH-MM-SS.ext`
 - conservation sur place des fichiers douteux
 - journal CSV local pour savoir ce qui a ete fait et relancer sans risque
 
@@ -61,6 +63,12 @@ Le moteur peut aussi etre lance sans le lanceur graphique:
 
 ```bash
 python3 photo_sorter.py "/Volumes/MON_DISQUE/Photos" "/Volumes/MON_DISQUE" --log-file ~/Library/Logs/photos-trieur/manuel.csv
+```
+
+Vous pouvez changer le nom du dossier cible:
+
+```bash
+python3 photo_sorter.py "/Volumes/MON_DISQUE/Photos" "/Volumes/MON_DISQUE" --output-folder-name "mes-photos-triees"
 ```
 
 Ajouter `--apply` pour deplacer reellement les fichiers.

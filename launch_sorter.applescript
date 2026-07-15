@@ -16,6 +16,15 @@ on chooseButton(promptText, buttonList, defaultButton, cancelButton)
 	end try
 end chooseButton
 
+on chooseText(promptText, defaultValue)
+	try
+		set valuePicked to text returned of (display dialog promptText default answer defaultValue buttons {"Annuler", "OK"} default button "OK" cancel button "Annuler")
+		return valuePicked
+	on error number -128
+		return "__CANCEL__"
+	end try
+end chooseText
+
 on readSummaryMessage(pythonBin, summaryPath, modeLabel)
 	set pyCode to "import json,sys\nmode=sys.argv[1]\npath=sys.argv[2]\ntry:\n d=json.load(open(path,encoding='utf-8'))\nexcept Exception:\n print(f'{mode} terminee.\\n\\nResume indisponible.')\n raise SystemExit(0)\nprint('\\n'.join([f'{mode} terminee.', '', f\"Fichiers trouves : {d.get('files_found', '?')}\", f\"Fichiers deplacables : {d.get('movable', '?')}\", f\"Fichiers ignores : {d.get('skipped', '?')}\", f\"Erreurs : {d.get('errors', '?')}\", '', f\"Dossier cible : {d.get('output_root', '?')}\", f\"Journal : {d.get('log_path', '?')}\"]))"
 	return do shell script quoted form of pythonBin & " -c " & quoted form of pyCode & " " & quoted form of modeLabel & " " & quoted form of summaryPath
@@ -40,19 +49,31 @@ on run
 		end try
 	end try
 	
-	set sourceDir to my chooseFolderWithPrompt("Etape 1/4 : choisir le dossier source")
+	set sourceDir to my chooseFolderWithPrompt("Etape 1/6 : choisir le dossier source")
 	if sourceDir is "__CANCEL__" then return
 	
-	set destinationParent to my chooseFolderWithPrompt("Etape 2/4 : choisir le dossier destination (qui contiendra sorted)")
+	set destinationParent to my chooseFolderWithPrompt("Etape 2/6 : choisir le dossier destination")
 	if destinationParent is "__CANCEL__" then return
+
+	set outputFolderName to my chooseText("Etape 3/6 : nom du dossier cible (ex: sorted)", "sorted")
+	if outputFolderName is "__CANCEL__" then return
+	set outputFolderName to do shell script "/bin/echo " & quoted form of outputFolderName & " | /usr/bin/sed -e 's/^ *//' -e 's/ *$//'"
+	if outputFolderName is "" then
+		display dialog "Le nom du dossier cible ne peut pas etre vide." with title "Photos Trieur" buttons {"OK"} default button "OK"
+		return
+	end if
+	if outputFolderName contains "/" then
+		display dialog "Le nom du dossier cible ne doit pas contenir '/'." with title "Photos Trieur" buttons {"OK"} default button "OK"
+		return
+	end if
 	
-	set mediaScope to my chooseButton("Etape 3/4 : inclure aussi les videos ?", {"Annuler", "Photos seules", "Photos et videos"}, "Photos seules", "Annuler")
+	set mediaScope to my chooseButton("Etape 4/6 : inclure aussi les videos ?", {"Annuler", "Photos seules", "Photos et videos"}, "Photos seules", "Annuler")
 	if mediaScope is "__CANCEL__" then return
 	
-	set modeChoice to my chooseButton("Etape 4/5 : choisir le mode", {"Annuler", "Previsualiser", "Executer"}, "Previsualiser", "Annuler")
+	set modeChoice to my chooseButton("Etape 5/6 : choisir le mode", {"Annuler", "Previsualiser", "Executer"}, "Previsualiser", "Annuler")
 	if modeChoice is "__CANCEL__" then return
 
-	set launchStyle to my chooseButton("Etape 5/5 : mode de lancement", {"Annuler", "Arriere-plan", "Attendre la fin"}, "Arriere-plan", "Annuler")
+	set launchStyle to my chooseButton("Etape 6/6 : mode de lancement", {"Annuler", "Arriere-plan", "Attendre la fin"}, "Arriere-plan", "Annuler")
 	if launchStyle is "__CANCEL__" then return
 	
 	set logDir to POSIX path of (path to library folder from user domain) & "Logs/photos-trieur"
@@ -61,7 +82,7 @@ on run
 	set logFile to logDir & "/photos-trieur-" & runId & ".csv"
 	set summaryFile to logDir & "/photos-trieur-" & runId & "-summary.json"
 	
-	set cmd to quoted form of pythonBin & " " & quoted form of sorterPath & " " & quoted form of sourceDir & " " & quoted form of destinationParent & " --log-file " & quoted form of logFile & " --summary-file " & quoted form of summaryFile
+	set cmd to quoted form of pythonBin & " " & quoted form of sorterPath & " " & quoted form of sourceDir & " " & quoted form of destinationParent & " --log-file " & quoted form of logFile & " --summary-file " & quoted form of summaryFile & " --output-folder-name " & quoted form of outputFolderName
 	if mediaScope is "Photos et videos" then
 		set cmd to cmd & " --include-videos"
 	end if
