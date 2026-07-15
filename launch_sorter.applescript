@@ -71,10 +71,13 @@ on run
 
 	if launchStyle is "Arriere-plan" then
 		set outputLogFile to logDir & "/photos-trieur-" & runId & ".out.log"
-		set launchCmd to "/bin/zsh -lc " & quoted form of ("nohup " & cmd & " > " & quoted form of outputLogFile & " 2>&1 < /dev/null & echo $!")
+		set successOsa to "display notification " & quoted form of ("Traitement termine (" & modeChoice & ").") & " with title " & quoted form of "Photos Trieur"
+		set failureOsa to "display notification " & quoted form of ("Traitement echoue (" & modeChoice & "). Voir le journal CSV.") & " with title " & quoted form of "Photos Trieur"
+		set workerCmd to cmd & " > " & quoted form of outputLogFile & " 2>&1; exit_code=$?; if [ $exit_code -eq 0 ]; then /usr/bin/osascript -e " & quoted form of successOsa & "; else /usr/bin/osascript -e " & quoted form of failureOsa & "; fi"
+		set launchCmd to "/bin/zsh -lc " & quoted form of ("(" & workerCmd & ") </dev/null >/dev/null 2>&1 & echo $!")
 		set jobPid to do shell script launchCmd
 
-		set startedChoice to button returned of (display dialog "Traitement lance en arriere-plan (" & modeChoice & ")." & return & return & "PID : " & jobPid & return & "Journal CSV :" & return & logFile & return & return & "Vous pouvez continuer a utiliser vos autres applications." with title "Photos Trieur" buttons {"OK", "Afficher le journal"} default button "OK")
+		set startedChoice to button returned of (display dialog "Traitement lance en arriere-plan (" & modeChoice & ")." & return & return & "PID : " & jobPid & return & "Journal CSV :" & return & logFile & return & return & "Une notification macOS s'affichera a la fin." with title "Photos Trieur" buttons {"OK", "Afficher le journal"} default button "OK")
 		if startedChoice is "Afficher le journal" then
 			do shell script "/usr/bin/open -R " & quoted form of logFile
 		end if
