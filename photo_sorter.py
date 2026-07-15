@@ -228,7 +228,7 @@ def write_log_header(writer: csv.writer, log_path: Path) -> None:
     ])
 
 
-def process(source_root: Path, destination_parent: Path, apply_changes: bool, include_videos: bool, batch_size: int, log_path: Path) -> dict[str, object]:
+def process(source_root: Path, destination_parent: Path, apply_changes: bool, include_videos: bool, batch_size: int, log_path: Path, summary_file: Path | None = None) -> dict[str, object]:
     output_root = destination_parent / SORTED_FOLDER_NAME
     files = sorted(iter_media_files(source_root, output_root, include_videos))
 
@@ -287,6 +287,10 @@ def process(source_root: Path, destination_parent: Path, apply_changes: bool, in
         "mode": "apply" if apply_changes else "dry-run",
     }
 
+    if summary_file:
+        summary_file.parent.mkdir(parents=True, exist_ok=True)
+        summary_file.write_text(json.dumps(summary, ensure_ascii=True), encoding="utf-8")
+
     print(json.dumps(summary, indent=2, ensure_ascii=True))
     return summary
 
@@ -301,6 +305,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include-videos", action="store_true", help="Include MOV/MP4/M4V/AVI files")
     parser.add_argument("--batch-size", type=int, default=200, help="Number of files sent to exiftool per batch")
     parser.add_argument("--log-file", help="CSV log path. Defaults to ~/Library/Logs/tri-photos-simple/")
+    parser.add_argument("--summary-file", help="Write summary JSON to this file")
     return parser.parse_args()
 
 
@@ -309,6 +314,7 @@ def main() -> int:
     source_root = Path(args.source).expanduser().resolve()
     destination_parent = Path(args.destination).expanduser().resolve()
     log_path = Path(args.log_file).expanduser().resolve() if args.log_file else default_log_path()
+    summary_file = Path(args.summary_file).expanduser().resolve() if args.summary_file else None
 
     if not source_root.is_dir():
         print(f"Source folder not found: {source_root}", file=sys.stderr)
@@ -326,6 +332,7 @@ def main() -> int:
             include_videos=args.include_videos,
             batch_size=max(1, args.batch_size),
             log_path=log_path,
+            summary_file=summary_file,
         )
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
