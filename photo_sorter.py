@@ -35,6 +35,29 @@ SORTED_FOLDER_NAME = "sorted"
 LOG_DIRECTORY = Path.home() / "Library" / "Logs" / "photos-trieur"
 
 
+def resolve_exiftool() -> str:
+    configured = os.environ.get("EXIFTOOL_BIN")
+    if configured:
+        candidate = Path(configured).expanduser()
+        if candidate.exists() and os.access(candidate, os.X_OK):
+            return str(candidate)
+
+    found = shutil.which("exiftool")
+    if found:
+        return found
+
+    common_paths = [
+        Path("/opt/homebrew/bin/exiftool"),
+        Path("/usr/local/bin/exiftool"),
+        Path("/usr/bin/exiftool"),
+    ]
+    for candidate in common_paths:
+        if candidate.exists() and os.access(candidate, os.X_OK):
+            return str(candidate)
+
+    raise RuntimeError("exiftool is required. Install it with: brew install exiftool")
+
+
 @dataclass
 class Decision:
     month: str | None
@@ -165,8 +188,9 @@ def batched(items: list[Path], size: int) -> Iterable[list[Path]]:
 
 
 def read_metadata_batch(paths: list[Path]) -> dict[Path, dict[str, str]]:
+    exiftool_bin = resolve_exiftool()
     command = [
-        "exiftool",
+        exiftool_bin,
         "-json",
         "-api", "LargeFileSupport=1",
         "-charset", "filename=UTF8",
