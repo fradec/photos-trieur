@@ -71,13 +71,17 @@ on run
 
 	if launchStyle is "Arriere-plan" then
 		set outputLogFile to logDir & "/photos-trieur-" & runId & ".out.log"
-		set successOsa to "display notification " & quoted form of ("Traitement termine (" & modeChoice & ").") & " with title " & quoted form of "Photos Trieur"
-		set failureOsa to "display notification " & quoted form of ("Traitement echoue (" & modeChoice & "). Voir le journal CSV.") & " with title " & quoted form of "Photos Trieur"
-		set workerCmd to cmd & " > " & quoted form of outputLogFile & " 2>&1; exit_code=$?; if [ $exit_code -eq 0 ]; then /usr/bin/osascript -e " & quoted form of successOsa & "; else /usr/bin/osascript -e " & quoted form of failureOsa & "; fi"
+		set successMessage to "Traitement termine (" & modeChoice & ")." & return & return & "Journal :" & return & logFile
+		set failureMessage to "Traitement echoue (" & modeChoice & ")." & return & return & "Journal :" & return & logFile
+		set successDialogExpr to "button returned of (display dialog " & quoted form of successMessage & " with title \"Photos Trieur\" buttons {\"OK\", \"Afficher le journal\"} default button \"OK\")"
+		set failureDialogExpr to "button returned of (display dialog " & quoted form of failureMessage & " with title \"Photos Trieur\" buttons {\"OK\", \"Afficher le journal\"} default button \"OK\")"
+		set successFlow to "choice=$(/usr/bin/osascript -e " & quoted form of successDialogExpr & "); if [ \"$choice\" = \"Afficher le journal\" ]; then /usr/bin/open -R " & quoted form of logFile & "; fi"
+		set failureFlow to "choice=$(/usr/bin/osascript -e " & quoted form of failureDialogExpr & "); if [ \"$choice\" = \"Afficher le journal\" ]; then /usr/bin/open -R " & quoted form of logFile & "; fi"
+		set workerCmd to cmd & " > " & quoted form of outputLogFile & " 2>&1; exit_code=$?; if [ $exit_code -eq 0 ]; then " & successFlow & "; else " & failureFlow & "; fi"
 		set launchCmd to "/bin/zsh -lc " & quoted form of ("(" & workerCmd & ") </dev/null >/dev/null 2>&1 & echo $!")
 		set jobPid to do shell script launchCmd
 
-		set startedChoice to button returned of (display dialog "Traitement lance en arriere-plan (" & modeChoice & ")." & return & return & "PID : " & jobPid & return & "Journal CSV :" & return & logFile & return & return & "Une notification macOS s'affichera a la fin." with title "Photos Trieur" buttons {"OK", "Afficher le journal"} default button "OK")
+		set startedChoice to button returned of (display dialog "Traitement lance en arriere-plan (" & modeChoice & ")." & return & return & "PID : " & jobPid & return & "Journal CSV :" & return & logFile & return & return & "Un dialogue de fin s'affichera automatiquement." with title "Photos Trieur" buttons {"OK", "Afficher le journal"} default button "OK")
 		if startedChoice is "Afficher le journal" then
 			do shell script "/usr/bin/open -R " & quoted form of logFile
 		end if
