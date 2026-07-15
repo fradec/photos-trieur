@@ -38,12 +38,16 @@ Compiler puis lancer l'application macOS sans Terminal:
 ```bash
 cd /Users/nono/code/nono/photos-trieur
 ./build_app.sh
-open launch_sorter.app
+open "Photos Trieur.app"
 ```
 
 Dans le lanceur, vous choisissez explicitement le mode:
 - `Previsualiser` (dry-run)
 - `Executer` (deplacement reel)
+
+Puis le mode de lancement:
+- `Arriere-plan` (recommande, non bloquant)
+- `Attendre la fin` (bloquant, avec resume immediat)
 
 Le journal est ecrit par defaut dans:
 

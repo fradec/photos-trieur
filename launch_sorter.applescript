@@ -49,8 +49,11 @@ on run
 	set mediaScope to my chooseButton("Etape 3/4 : inclure aussi les videos ?", {"Annuler", "Photos seules", "Photos et videos"}, "Photos seules", "Annuler")
 	if mediaScope is "__CANCEL__" then return
 	
-	set modeChoice to my chooseButton("Etape 4/4 : choisir le mode", {"Annuler", "Previsualiser", "Executer"}, "Previsualiser", "Annuler")
+	set modeChoice to my chooseButton("Etape 4/5 : choisir le mode", {"Annuler", "Previsualiser", "Executer"}, "Previsualiser", "Annuler")
 	if modeChoice is "__CANCEL__" then return
+
+	set launchStyle to my chooseButton("Etape 5/5 : mode de lancement", {"Annuler", "Arriere-plan", "Attendre la fin"}, "Arriere-plan", "Annuler")
+	if launchStyle is "__CANCEL__" then return
 	
 	set logDir to POSIX path of (path to library folder from user domain) & "Logs/photos-trieur"
 	do shell script "/bin/mkdir -p " & quoted form of logDir
@@ -64,6 +67,18 @@ on run
 	end if
 	if modeChoice is "Executer" then
 		set cmd to cmd & " --apply"
+	end if
+
+	if launchStyle is "Arriere-plan" then
+		set outputLogFile to logDir & "/photos-trieur-" & runId & ".out.log"
+		set launchCmd to "/bin/zsh -lc " & quoted form of ("nohup " & cmd & " > " & quoted form of outputLogFile & " 2>&1 < /dev/null & echo $!")
+		set jobPid to do shell script launchCmd
+
+		set startedChoice to button returned of (display dialog "Traitement lance en arriere-plan (" & modeChoice & ")." & return & return & "PID : " & jobPid & return & "Journal CSV :" & return & logFile & return & return & "Vous pouvez continuer a utiliser vos autres applications." with title "Photos Trieur" buttons {"OK", "Afficher le journal"} default button "OK")
+		if startedChoice is "Afficher le journal" then
+			do shell script "/usr/bin/open -R " & quoted form of logFile
+		end if
+		return
 	end if
 	
 	try
