@@ -21,7 +21,7 @@ PHOTO_EXTENSIONS = {
 }
 
 VIDEO_EXTENSIONS = {
-    ".mov", ".mp4", ".m4v", ".avi",
+    ".mov", ".mp4", ".m4v", ".avi", ".mts", ".flv", ".webm", ".mpg",
 }
 
 EXIF_TAGS = [
@@ -452,7 +452,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("source", help="Source folder to scan recursively")
     parser.add_argument("destination", help="Parent folder that will receive the 'sorted' folder")
     parser.add_argument("--apply", action="store_true", help="Move files instead of running a dry-run")
-    parser.add_argument("--include-videos", action="store_true", help="Include MOV/MP4/M4V/AVI files")
+    parser.add_argument("--include-videos", action="store_true", help="Include MOV/MP4/M4V/AVI/MTS/FLV/WEBM/MPG files")
     parser.add_argument("--batch-size", type=int, default=200, help="Number of files sent to exiftool per batch")
     parser.add_argument("--log-file", help="CSV log path. Defaults to ~/Library/Logs/tri-photos-simple/")
     parser.add_argument("--summary-file", help="Write summary JSON to this file")

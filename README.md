@@ -62,6 +62,9 @@ Dans le lanceur, vous choisissez explicitement le mode:
 - `Previsualiser` (dry-run)
 - `Executer` (deplacement reel)
 
+Avec l'option videos activee, les extensions suivantes sont prises en charge:
+- `.mov`, `.mp4`, `.m4v`, `.avi`, `.mts`, `.flv`, `.webm`, `.mpg`
+
 Puis le mode de lancement:
 - `Arriere-plan` (recommande, non bloquant)
 - `Attendre la fin` (bloquant, avec resume immediat)
