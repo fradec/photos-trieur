@@ -64,7 +64,7 @@ on run
 	end if
 
 	set outputLogFile to logDir & "/photos-trieur-" & runId & ".out.log"
-	set notifySuccess to "display notification \"Traitement termine (" & modeChoice & ").\" with title \"Photos Trieur\""
+	set notifySuccess to "display notification \"Traitement terminé.\" with title \"Photos Trieur\""
 	set notifyFailure to "display notification \"Traitement echoue (" & modeChoice & "). Voir le journal.\" with title \"Photos Trieur\""
 	set workerCmd to cmd & " > " & quoted form of outputLogFile & " 2>&1; exit_code=$?; if [ \"$exit_code\" -eq 0 ]; then /usr/bin/osascript -e " & quoted form of notifySuccess & "; else /usr/bin/osascript -e " & quoted form of notifyFailure & "; fi; /usr/bin/open " & quoted form of logDir
 	set launchCmd to "/bin/zsh -lc " & quoted form of ("nohup sh -c " & quoted form of workerCmd & " </dev/null >/dev/null 2>&1 & echo $!")
