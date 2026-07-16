@@ -18,6 +18,7 @@ end chooseButton
 
 property gCompletionFile : ""
 property gCompletionHandled : false
+property gLogDir : ""
 
 on readSummaryMessage(pythonBin, summaryPath, modeLabel)
 	set pyCode to "import json,sys\nmode=sys.argv[1]\npath=sys.argv[2]\ntry:\n d=json.load(open(path,encoding='utf-8'))\nexcept Exception:\n print(f'{mode} terminee.\\n\\nResume indisponible.')\n raise SystemExit(0)\nprint('\\n'.join([f'{mode} terminee.', '', f\"Fichiers trouves : {d.get('files_found', '?')}\", f\"Fichiers deplacables : {d.get('movable', '?')}\", f\"Fichiers ignores : {d.get('skipped', '?')}\", f\"Erreurs : {d.get('errors', '?')}\", '', f\"Dossier cible : {d.get('output_root', '?')}\", f\"Journal : {d.get('log_path', '?')}\"]))"
@@ -48,8 +49,13 @@ on idle
 		display notification "Traitement echoue. Voir le journal." with title "Photos Trieur"
 	end if
 
+	if gLogDir is not "" then
+		do shell script "/usr/bin/open " & quoted form of gLogDir
+	end if
+
 	do shell script "/bin/rm -f " & quoted form of gCompletionFile
 	set gCompletionFile to ""
+	set gLogDir to ""
 	return 2
 end idle
 
@@ -59,7 +65,7 @@ on run
 	set adjacentSorterPath to appDir & "/photo_sorter.py"
 	set sorterPath to ""
 	set pythonBin to "/usr/bin/python3"
-	
+
 	try
 		set sorterPath to POSIX path of (path to resource "photo_sorter.py")
 	on error
@@ -104,13 +110,9 @@ on run
 	set completionFile to logDir & "/photos-trieur-" & runId & ".done"
 	set gCompletionFile to completionFile
 	set gCompletionHandled to false
+	set gLogDir to logDir
 	set workerCmd to cmd & " > " & quoted form of outputLogFile & " 2>&1; exit_code=$?; printf '%s\n' \"$exit_code\" > " & quoted form of completionFile & ".tmp; mv " & quoted form of completionFile & ".tmp " & quoted form of completionFile
 	set launchCmd to "/bin/zsh -lc " & quoted form of ("nohup sh -c " & quoted form of workerCmd & " </dev/null >/dev/null 2>&1 & echo $!")
 	set jobPid to do shell script launchCmd
-
-	set startedChoice to button returned of (display dialog "Traitement lance en arriere-plan (" & modeChoice & ")." & return & return & "PID : " & jobPid & return & "Journal CSV :" & return & logFile & return & return & "Une notification apparaîtra a la fin." with title "Photos Trieur" buttons {"OK", "Afficher le journal"} default button "OK")
-	if startedChoice is "Afficher le journal" then
-		do shell script "/usr/bin/open -R " & quoted form of logFile
-	end if
 	return
 end run
