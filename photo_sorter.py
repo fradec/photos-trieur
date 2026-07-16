@@ -32,6 +32,14 @@ EXIF_TAGS = [
     "TrackCreateDate",
 ]
 
+PRIMARY_CAPTURE_TAG = "DateTimeOriginal"
+FALLBACK_CAPTURE_TAGS = [
+    "SubSecDateTimeOriginal",
+    "CreateDate",
+    "MediaCreateDate",
+    "TrackCreateDate",
+]
+
 SORTED_FOLDER_NAME = "sorted"
 SKIP_FOLDER_NAME = "skip"
 LOG_DIRECTORY = Path.home() / "Library" / "Logs" / "photos-trieur"
@@ -72,26 +80,6 @@ class Decision:
 def valid_year(year: int) -> bool:
     current_year = datetime.now().year
     return 1900 <= year <= current_year + 1
-
-
-def parse_date_to_month(value: str | None) -> str | None:
-    if not value or not isinstance(value, str):
-        return None
-
-    match = re.search(r"((?:19|20)\d{2})[:\-]([01]\d)[:\-]([0-3]\d)", value)
-    if not match:
-        return None
-
-    year, month, day = map(int, match.groups())
-    try:
-        candidate = datetime(year, month, day)
-    except ValueError:
-        return None
-
-    if not valid_year(candidate.year):
-        return None
-
-    return candidate.strftime("%Y-%m")
 
 
 def parse_date_to_datetime(value: str | None) -> datetime | None:
@@ -189,50 +177,29 @@ def stable_name_hash(source_path: Path) -> str:
 
 
 def choose_month(path: Path, metadata: dict[str, str]) -> Decision:
-    metadata_datetimes: list[tuple[str, datetime]] = []
-    for tag in EXIF_TAGS:
+    primary_datetime = parse_date_to_datetime(metadata.get(PRIMARY_CAPTURE_TAG))
+    if primary_datetime:
+        return Decision(primary_datetime.strftime("%Y-%m"), primary_datetime, f"metadata:{PRIMARY_CAPTURE_TAG}")
+
+    for tag in FALLBACK_CAPTURE_TAGS:
         captured_at = parse_date_to_datetime(metadata.get(tag))
         if captured_at:
-            metadata_datetimes.append((tag, captured_at))
+            return Decision(captured_at.strftime("%Y-%m"), captured_at, f"metadata:{tag}")
 
-    metadata_months = [(tag, value.strftime("%Y-%m")) for tag, value in metadata_datetimes]
     filename_values = sorted(filename_datetimes(path))
-    filename_month_values = sorted({value.strftime("%Y-%m") for value in filename_values})
+    if filename_values:
+        captured_at = filename_values[0]
+        return Decision(captured_at.strftime("%Y-%m"), captured_at, "filename")
 
-    unique_metadata_months = sorted({month for _, month in metadata_months})
-    unique_filename_months = filename_month_values or sorted(filename_months(path))
-
-    if len(unique_metadata_months) > 1:
-        return Decision(None, None, "metadata_conflict")
-
-    if len(unique_filename_months) > 1:
-        return Decision(None, None, "filename_conflict")
-
-    metadata_month = unique_metadata_months[0] if unique_metadata_months else None
-    filename_month = unique_filename_months[0] if unique_filename_months else None
-
-    if metadata_month and filename_month and metadata_month != filename_month:
-        return Decision(None, None, f"metadata_filename_mismatch:{metadata_month}:{filename_month}")
-
-    if metadata_month:
-        captured_at = metadata_datetimes[0][1] if metadata_datetimes else None
-        return Decision(metadata_month, captured_at, "metadata")
-
-    if filename_month:
-        captured_at = filename_values[0] if filename_values else None
-        return Decision(filename_month, captured_at, "filename")
+    filename_month_values = sorted(filename_months(path))
+    if filename_month_values:
+        return Decision(filename_month_values[0], None, "filename")
 
     return Decision(None, None, "no_reliable_date")
 
 
 def skip_reason_bucket(reason: str) -> str:
-    if reason.startswith("metadata_filename_mismatch"):
-        return "metadata_filename_mismatch"
-    if reason in {
-        "metadata_conflict",
-        "filename_conflict",
-        "no_reliable_date",
-    }:
+    if reason == "no_reliable_date":
         return reason
     return "other"
 
@@ -447,14 +414,14 @@ def process(source_root: Path, destination_parent: Path, apply_changes: bool, in
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Sort photos into YYYY-MM folders when the date is unambiguous."
+        description="Sort photos into YYYY-MM folders when a reliable date is available."
     )
     parser.add_argument("source", help="Source folder to scan recursively")
     parser.add_argument("destination", help="Parent folder that will receive the 'sorted' folder")
     parser.add_argument("--apply", action="store_true", help="Move files instead of running a dry-run")
     parser.add_argument("--include-videos", action="store_true", help="Include MOV/MP4/M4V/AVI/MTS/FLV/WEBM/MPG files")
     parser.add_argument("--batch-size", type=int, default=200, help="Number of files sent to exiftool per batch")
-    parser.add_argument("--log-file", help="CSV log path. Defaults to ~/Library/Logs/tri-photos-simple/")
+    parser.add_argument("--log-file", help="CSV log path. Defaults to ~/Library/Logs/photos-trieur/")
     parser.add_argument("--summary-file", help="Write summary JSON to this file")
     parser.add_argument("--output-folder-name", default=SORTED_FOLDER_NAME, help="Name of the output folder created under destination")
     return parser.parse_args()

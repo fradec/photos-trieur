@@ -13,16 +13,17 @@ Le projet repose sur deux fichiers utiles:
 - scan recursif automatique des sous-dossiers
 - creation ou reutilisation du dossier cible
 - creation de sous-dossiers `YYYY/YYYY-MM`
-- deplacement uniquement si la date est sans ambiguite
+- deplacement des qu'une date fiable est disponible
 - renommage uniforme des fichiers deplaces en `YYYY-MM-DD_HH-MM-SS[-fff]__hash8.ext`
 - centralisation des fichiers non deplacables dans `skip/` (dossier voisin de la sortie cible)
 - journal CSV local pour savoir ce qui a ete fait et relancer sans risque
 
 ## Regles de tri
 
-- priorite aux metadonnees EXIF quand elles sont coherentes
-- repli sur le nom du fichier quand il contient une date exploitable
-- en cas de conflit ou de doute, le fichier est deplace vers `skip/` dans le sous-dossier correspondant
+- priorite stricte a `DateTimeOriginal` (date/heure de prise de vue)
+- si `DateTimeOriginal` est absent ou invalide, repli sur les autres dates metadata (`SubSecDateTimeOriginal`, `CreateDate`, `MediaCreateDate`, `TrackCreateDate`)
+- si aucune date metadata exploitable n'est disponible, repli sur la date detectee dans le nom du fichier
+- si aucune date exploitable n'est disponible, le fichier est place dans `skip/no_reliable_date`
 
 ## Dossier skip
 
@@ -33,10 +34,8 @@ Exemple:
 - non deplacables: `/Volumes/DISK/skip/...`
 
 Sous-dossiers de `skip` (raisons metier):
-- `metadata_conflict`: les metadata donnent plusieurs mois differents
-- `filename_conflict`: le nom du fichier contient plusieurs mois differents
-- `metadata_filename_mismatch`: le mois issu des metadata ne correspond pas au mois lu dans le nom
-- `no_reliable_date`: impossible de determiner un mois fiable (metadata et nom insuffisants)
+- `no_reliable_date`: impossible de determiner une date fiable (metadata et nom insuffisants)
+- `other`: categorie de secours si une raison non prevue apparait
 
 Note: ces fichiers gardent leur nom d'origine.
 
