@@ -33,6 +33,7 @@ EXIF_TAGS = [
 ]
 
 SORTED_FOLDER_NAME = "sorted"
+SKIP_FOLDER_NAME = "skip"
 LOG_DIRECTORY = Path.home() / "Library" / "Logs" / "photos-trieur"
 TARGET_FILENAME_FORMAT = "%Y-%m-%d_%H-%M-%S"
 TARGET_FILENAME_HASH_LEN = 8
@@ -224,19 +225,31 @@ def choose_month(path: Path, metadata: dict[str, str]) -> Decision:
     return Decision(None, None, "no_reliable_date")
 
 
-def iter_media_files(source_root: Path, output_root: Path, include_videos: bool) -> Iterable[Path]:
+def skip_reason_bucket(reason: str) -> str:
+    if reason.startswith("metadata_filename_mismatch"):
+        return "metadata_filename_mismatch"
+    if reason in {
+        "metadata_conflict",
+        "filename_conflict",
+        "no_reliable_date",
+    }:
+        return reason
+    return "other"
+
+
+def iter_media_files(source_root: Path, ignored_roots: set[Path], include_videos: bool) -> Iterable[Path]:
     extensions = PHOTO_EXTENSIONS | (VIDEO_EXTENSIONS if include_videos else set())
 
     for dirpath, dirnames, filenames in os.walk(source_root):
         current_dir = Path(dirpath)
 
-        if current_dir == output_root or output_root in current_dir.parents:
+        if any(current_dir == ignored_root or ignored_root in current_dir.parents for ignored_root in ignored_roots):
             continue
 
         dirnames[:] = [
             name for name in dirnames
             if not name.startswith(".")
-            and (current_dir / name) != output_root
+            and (current_dir / name) not in ignored_roots
         ]
 
         for filename in filenames:
@@ -346,10 +359,12 @@ def write_log_header(writer: csv.writer, log_path: Path) -> None:
 
 def process(source_root: Path, destination_parent: Path, apply_changes: bool, include_videos: bool, batch_size: int, log_path: Path, summary_file: Path | None = None, output_folder_name: str = SORTED_FOLDER_NAME) -> dict[str, object]:
     output_root = destination_parent / output_folder_name
-    files = sorted(iter_media_files(source_root, output_root, include_videos))
+    skip_root = destination_parent / SKIP_FOLDER_NAME
+    files = sorted(iter_media_files(source_root, {output_root, skip_root}, include_videos))
 
     moved_count = 0
     skipped_count = 0
+    skipped_moved_count = 0
     error_count = 0
 
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -373,7 +388,20 @@ def process(source_root: Path, destination_parent: Path, apply_changes: bool, in
 
                 if not decision.month:
                     skipped_count += 1
-                    writer.writerow([now, "apply" if apply_changes else "dry-run", "SKIP", str(source_path), "", "", decision.reason])
+                    skip_dir = skip_root / skip_reason_bucket(decision.reason)
+                    skip_target_path = ensure_unique_destination(skip_dir / source_path.name)
+
+                    if apply_changes:
+                        try:
+                            skip_dir.mkdir(parents=True, exist_ok=True)
+                            shutil.move(str(source_path), str(skip_target_path))
+                            skipped_moved_count += 1
+                            writer.writerow([now, "apply", "SKIP_MOVED", str(source_path), str(skip_target_path), "", decision.reason])
+                        except Exception as exc:
+                            error_count += 1
+                            writer.writerow([now, "apply", "ERROR", str(source_path), str(skip_target_path), "", str(exc)])
+                    else:
+                        writer.writerow([now, "dry-run", "WOULD_SKIP_MOVE", str(source_path), str(skip_target_path), "", decision.reason])
                     continue
 
                 year = decision.month[:4]
@@ -397,12 +425,14 @@ def process(source_root: Path, destination_parent: Path, apply_changes: bool, in
     summary = {
         "source_root": str(source_root),
         "output_root": str(output_root),
+        "skip_root": str(skip_root),
         "output_folder_name": output_folder_name,
         "name_pattern": "YYYY-MM-DD_HH-MM-SS[-fff]__hash8.ext",
         "log_path": str(log_path),
         "files_found": len(files),
         "movable": moved_count,
         "skipped": skipped_count,
+        "skipped_moved": skipped_moved_count,
         "errors": error_count,
         "mode": "apply" if apply_changes else "dry-run",
     }

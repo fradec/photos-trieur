@@ -15,14 +15,30 @@ Le projet repose sur deux fichiers utiles:
 - creation de sous-dossiers `YYYY/YYYY-MM`
 - deplacement uniquement si la date est sans ambiguite
 - renommage uniforme des fichiers deplaces en `YYYY-MM-DD_HH-MM-SS[-fff]__hash8.ext`
-- conservation sur place des fichiers douteux
+- centralisation des fichiers non deplacables dans `skip/` (dossier voisin de la sortie cible)
 - journal CSV local pour savoir ce qui a ete fait et relancer sans risque
 
 ## Regles de tri
 
 - priorite aux metadonnees EXIF quand elles sont coherentes
 - repli sur le nom du fichier quand il contient une date exploitable
-- en cas de conflit ou de doute, le fichier est laisse en place
+- en cas de conflit ou de doute, le fichier est deplace vers `skip/` dans le sous-dossier correspondant
+
+## Dossier skip
+
+Les fichiers non deplacables sont envoyes dans un dossier `skip` place au meme niveau que le dossier cible choisi.
+
+Exemple:
+- cible: `/Volumes/DISK/Tri`
+- non deplacables: `/Volumes/DISK/skip/...`
+
+Sous-dossiers de `skip` (raisons metier):
+- `metadata_conflict`: les metadata donnent plusieurs mois differents
+- `filename_conflict`: le nom du fichier contient plusieurs mois differents
+- `metadata_filename_mismatch`: le mois issu des metadata ne correspond pas au mois lu dans le nom
+- `no_reliable_date`: impossible de determiner un mois fiable (metadata et nom insuffisants)
+
+Note: ces fichiers gardent leur nom d'origine.
 
 ## Prerequis
 
@@ -80,7 +96,7 @@ Ce projet est distribue sous The Unlicense (domaine public).
 
 Le traitement est naturellement relancable:
 - les fichiers deja deplaces ne sont plus dans la source
-- le dossier `sorted` est ignore pendant les scans suivants
+- le dossier cible et le dossier `skip` sont ignores pendant les scans suivants
 - le journal CSV garde une trace de chaque decision
 
 ## Conseil pratique
