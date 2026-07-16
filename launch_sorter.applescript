@@ -77,7 +77,7 @@ on run
 	set successFlow to "choice=$(" & uiPrefix & "/usr/bin/osascript -e " & quoted form of successDialogExpr & "); if [ \"$choice\" = \"Afficher le journal\" ]; then " & uiPrefix & "/usr/bin/open -R " & quoted form of logFile & "; fi"
 	set failureFlow to "choice=$(" & uiPrefix & "/usr/bin/osascript -e " & quoted form of failureDialogExpr & "); if [ \"$choice\" = \"Afficher le journal\" ]; then " & uiPrefix & "/usr/bin/open -R " & quoted form of logFile & "; fi"
 	set workerCmd to cmd & " > " & quoted form of outputLogFile & " 2>&1; exit_code=$?; if [ $exit_code -eq 0 ]; then " & successFlow & "; else " & failureFlow & "; fi"
-	set launchCmd to "/bin/zsh -lc " & quoted form of ("(" & workerCmd & ") </dev/null >/dev/null 2>&1 & echo $!")
+	set launchCmd to "/bin/zsh -lc " & quoted form of ("nohup sh -c " & quoted form of workerCmd & " </dev/null >/dev/null 2>&1 & echo $!")
 	set jobPid to do shell script launchCmd
 
 	set startedChoice to button returned of (display dialog "Traitement lance en arriere-plan (" & modeChoice & ")." & return & return & "PID : " & jobPid & return & "Journal CSV :" & return & logFile & return & return & "Un dialogue de fin s'affichera automatiquement." with title "Photos Trieur" buttons {"OK", "Afficher le journal"} default button "OK")
