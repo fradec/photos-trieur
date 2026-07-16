@@ -16,49 +16,6 @@ on chooseButton(promptText, buttonList, defaultButton, cancelButton)
 	end try
 end chooseButton
 
-property gCompletionFile : ""
-property gCompletionHandled : false
-property gLogDir : ""
-
-on readSummaryMessage(pythonBin, summaryPath, modeLabel)
-	set pyCode to "import json,sys\nmode=sys.argv[1]\npath=sys.argv[2]\ntry:\n d=json.load(open(path,encoding='utf-8'))\nexcept Exception:\n print(f'{mode} terminee.\\n\\nResume indisponible.')\n raise SystemExit(0)\nprint('\\n'.join([f'{mode} terminee.', '', f\"Fichiers trouves : {d.get('files_found', '?')}\", f\"Fichiers deplacables : {d.get('movable', '?')}\", f\"Fichiers ignores : {d.get('skipped', '?')}\", f\"Erreurs : {d.get('errors', '?')}\", '', f\"Dossier cible : {d.get('output_root', '?')}\", f\"Journal : {d.get('log_path', '?')}\"]))"
-	return do shell script quoted form of pythonBin & " -c " & quoted form of pyCode & " " & quoted form of modeLabel & " " & quoted form of summaryPath
-end readSummaryMessage
-
-on idle
-	if gCompletionFile is "" then
-		return 2
-	end if
-
-	try
-		do shell script "/bin/test -f " & quoted form of gCompletionFile
-	on error
-		return 2
-	end try
-
-	if gCompletionHandled then
-		return 2
-	end if
-
-	set gCompletionHandled to true
-	set exitCodeText to do shell script "/bin/cat " & quoted form of gCompletionFile
-
-	if exitCodeText is "0" then
-		display notification "Traitement termine." with title "Photos Trieur"
-	else
-		display notification "Traitement echoue. Voir le journal." with title "Photos Trieur"
-	end if
-
-	if gLogDir is not "" then
-		do shell script "/usr/bin/open " & quoted form of gLogDir
-	end if
-
-	do shell script "/bin/rm -f " & quoted form of gCompletionFile
-	set gCompletionFile to ""
-	set gLogDir to ""
-	return 2
-end idle
-
 on run
 	set appPath to POSIX path of (path to me)
 	set appDir to do shell script "/usr/bin/dirname " & quoted form of appPath
@@ -107,12 +64,10 @@ on run
 	end if
 
 	set outputLogFile to logDir & "/photos-trieur-" & runId & ".out.log"
-	set completionFile to logDir & "/photos-trieur-" & runId & ".done"
-	set gCompletionFile to completionFile
-	set gCompletionHandled to false
-	set gLogDir to logDir
-	set workerCmd to cmd & " > " & quoted form of outputLogFile & " 2>&1; exit_code=$?; printf '%s\n' \"$exit_code\" > " & quoted form of completionFile & ".tmp; mv " & quoted form of completionFile & ".tmp " & quoted form of completionFile
+	set notifySuccess to "display notification \"Traitement termine (" & modeChoice & ").\" with title \"Photos Trieur\""
+	set notifyFailure to "display notification \"Traitement echoue (" & modeChoice & "). Voir le journal.\" with title \"Photos Trieur\""
+	set workerCmd to cmd & " > " & quoted form of outputLogFile & " 2>&1; exit_code=$?; if [ \"$exit_code\" -eq 0 ]; then /usr/bin/osascript -e " & quoted form of notifySuccess & "; else /usr/bin/osascript -e " & quoted form of notifyFailure & "; fi; /usr/bin/open " & quoted form of logDir
 	set launchCmd to "/bin/zsh -lc " & quoted form of ("nohup sh -c " & quoted form of workerCmd & " </dev/null >/dev/null 2>&1 & echo $!")
-	set jobPid to do shell script launchCmd
+	do shell script launchCmd
 	return
 end run
