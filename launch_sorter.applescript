@@ -53,9 +53,6 @@ on run
 	
 	set modeChoice to my chooseButton("Etape 4/5 : choisir le mode", {"Annuler", "Previsualiser", "Executer"}, "Previsualiser", "Annuler")
 	if modeChoice is "__CANCEL__" then return
-
-	set launchStyle to my chooseButton("Etape 5/5 : mode de lancement", {"Annuler", "Arriere-plan", "Attendre la fin"}, "Arriere-plan", "Annuler")
-	if launchStyle is "__CANCEL__" then return
 	
 	set logDir to POSIX path of (path to library folder from user domain) & "Logs/photos-trieur"
 	do shell script "/bin/mkdir -p " & quoted form of logDir
@@ -71,40 +68,21 @@ on run
 		set cmd to cmd & " --apply"
 	end if
 
-	if launchStyle is "Arriere-plan" then
-		set outputLogFile to logDir & "/photos-trieur-" & runId & ".out.log"
-		set successMessage to "Traitement termine (" & modeChoice & ")." & return & return & "Journal :" & return & logFile
-		set failureMessage to "Traitement echoue (" & modeChoice & ")." & return & return & "Journal :" & return & logFile
-		set successDialogExpr to "button returned of (display dialog " & quoted form of successMessage & " with title \"Photos Trieur\" buttons {\"OK\", \"Afficher le journal\"} default button \"OK\")"
-		set failureDialogExpr to "button returned of (display dialog " & quoted form of failureMessage & " with title \"Photos Trieur\" buttons {\"OK\", \"Afficher le journal\"} default button \"OK\")"
-		set uiPrefix to "uid=$(/usr/bin/id -u); /bin/launchctl asuser \"$uid\" "
-		set successFlow to "choice=$(" & uiPrefix & "/usr/bin/osascript -e " & quoted form of successDialogExpr & "); if [ \"$choice\" = \"Afficher le journal\" ]; then " & uiPrefix & "/usr/bin/open -R " & quoted form of logFile & "; fi"
-		set failureFlow to "choice=$(" & uiPrefix & "/usr/bin/osascript -e " & quoted form of failureDialogExpr & "); if [ \"$choice\" = \"Afficher le journal\" ]; then " & uiPrefix & "/usr/bin/open -R " & quoted form of logFile & "; fi"
-		set workerCmd to cmd & " > " & quoted form of outputLogFile & " 2>&1; exit_code=$?; if [ $exit_code -eq 0 ]; then " & successFlow & "; else " & failureFlow & "; fi"
-		set launchCmd to "/bin/zsh -lc " & quoted form of ("(" & workerCmd & ") </dev/null >/dev/null 2>&1 & echo $!")
-		set jobPid to do shell script launchCmd
+	set outputLogFile to logDir & "/photos-trieur-" & runId & ".out.log"
+	set successMessage to "Traitement termine (" & modeChoice & ")." & return & return & "Journal :" & return & logFile
+	set failureMessage to "Traitement echoue (" & modeChoice & ")." & return & return & "Journal :" & return & logFile
+	set successDialogExpr to "button returned of (display dialog " & quoted form of successMessage & " with title \"Photos Trieur\" buttons {\"OK\", \"Afficher le journal\"} default button \"OK\")"
+	set failureDialogExpr to "button returned of (display dialog " & quoted form of failureMessage & " with title \"Photos Trieur\" buttons {\"OK\", \"Afficher le journal\"} default button \"OK\")"
+	set uiPrefix to "uid=$(/usr/bin/id -u); /bin/launchctl asuser \"$uid\" "
+	set successFlow to "choice=$(" & uiPrefix & "/usr/bin/osascript -e " & quoted form of successDialogExpr & "); if [ \"$choice\" = \"Afficher le journal\" ]; then " & uiPrefix & "/usr/bin/open -R " & quoted form of logFile & "; fi"
+	set failureFlow to "choice=$(" & uiPrefix & "/usr/bin/osascript -e " & quoted form of failureDialogExpr & "); if [ \"$choice\" = \"Afficher le journal\" ]; then " & uiPrefix & "/usr/bin/open -R " & quoted form of logFile & "; fi"
+	set workerCmd to cmd & " > " & quoted form of outputLogFile & " 2>&1; exit_code=$?; if [ $exit_code -eq 0 ]; then " & successFlow & "; else " & failureFlow & "; fi"
+	set launchCmd to "/bin/zsh -lc " & quoted form of ("(" & workerCmd & ") </dev/null >/dev/null 2>&1 & echo $!")
+	set jobPid to do shell script launchCmd
 
-		set startedChoice to button returned of (display dialog "Traitement lance en arriere-plan (" & modeChoice & ")." & return & return & "PID : " & jobPid & return & "Journal CSV :" & return & logFile & return & return & "Un dialogue de fin s'affichera automatiquement." with title "Photos Trieur" buttons {"OK", "Afficher le journal"} default button "OK")
-		if startedChoice is "Afficher le journal" then
-			do shell script "/usr/bin/open -R " & quoted form of logFile
-		end if
-		return
-	end if
-	
-	try
-		do shell script cmd
-	on error errMsg number errNum
-		set failChoice to button returned of (display dialog "Le traitement a echoue (" & modeChoice & ")." & return & return & "Journal :" & return & logFile & return & return & "Detail : " & errMsg with title "Photos Trieur" buttons {"OK", "Afficher le journal"} default button "OK")
-		if failChoice is "Afficher le journal" then
-			do shell script "/usr/bin/open -R " & quoted form of logFile
-		end if
-		return
-	end try
-	
-	set modeLabel to modeChoice
-	set summaryMessage to my readSummaryMessage(pythonBin, summaryFile, modeLabel)
-	set finalChoice to button returned of (display dialog summaryMessage with title "Photos Trieur" buttons {"OK", "Afficher le journal"} default button "OK")
-	if finalChoice is "Afficher le journal" then
+	set startedChoice to button returned of (display dialog "Traitement lance en arriere-plan (" & modeChoice & ")." & return & return & "PID : " & jobPid & return & "Journal CSV :" & return & logFile & return & return & "Un dialogue de fin s'affichera automatiquement." with title "Photos Trieur" buttons {"OK", "Afficher le journal"} default button "OK")
+	if startedChoice is "Afficher le journal" then
 		do shell script "/usr/bin/open -R " & quoted form of logFile
 	end if
+	return
 end run
