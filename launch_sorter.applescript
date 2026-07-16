@@ -40,18 +40,18 @@ on run
 		end try
 	end try
 	
-	set sourceDir to my chooseFolderWithPrompt("Etape 1/5 : choisir le dossier source")
+	set sourceDir to my chooseFolderWithPrompt("Etape 1/4 : choisir le dossier source")
 	if sourceDir is "__CANCEL__" then return
 	
-	set outputFolderPath to my chooseFolderWithPrompt("Etape 2/5 : choisir le dossier cible final (existant ou nouveau)")
+	set outputFolderPath to my chooseFolderWithPrompt("Etape 2/4 : choisir le dossier cible final (existant ou nouveau)")
 	if outputFolderPath is "__CANCEL__" then return
 	set destinationParent to do shell script "/usr/bin/dirname " & quoted form of outputFolderPath
 	set outputFolderName to do shell script "/usr/bin/basename " & quoted form of outputFolderPath
 	
-	set mediaScope to my chooseButton("Etape 3/5 : inclure aussi les videos ?", {"Annuler", "Photos seules", "Photos et videos"}, "Photos seules", "Annuler")
+	set mediaScope to my chooseButton("Etape 3/4 : inclure aussi les videos ?", {"Annuler", "Photos seules", "Photos et videos"}, "Photos seules", "Annuler")
 	if mediaScope is "__CANCEL__" then return
 	
-	set modeChoice to my chooseButton("Etape 4/5 : choisir le mode", {"Annuler", "Previsualiser", "Executer"}, "Previsualiser", "Annuler")
+	set modeChoice to my chooseButton("Etape 4/4 : choisir le mode", {"Annuler", "Previsualiser", "Executer"}, "Previsualiser", "Annuler")
 	if modeChoice is "__CANCEL__" then return
 	
 	set logDir to POSIX path of (path to library folder from user domain) & "Logs/photos-trieur"
